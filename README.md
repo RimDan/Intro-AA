@@ -6,5 +6,6 @@
 ## Notebooks
 - Clase 1: Introducción → notebooks/clase0.ipynb
 
-## Cómo usar
+## Material
+- Programa de la materia → material/programa.pdf
 - Guia para usar colab → material/colab.pdf
