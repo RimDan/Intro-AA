@@ -1,0 +1,1720 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Práctica 2 — Fundamentos Matemáticos de aprendizaje automático\n",
+        "\n",
+        "**Materia:** Introducción al Aprendizaje Automático  \n",
+        "**Tema:** Aplicacion de fundamentos matematicos, probabilidad y estadistica a traves de un piplenie de AA\n",
+        "**Nombre y apellido:**  \n",
+        "**Fecha de entrega:**  Miercoles 15/04/2026, 23:59\n",
+        "\n",
+        "---\n",
+        "\n",
+        "## Objetivos\n",
+        "\n",
+        "En esta práctica vas a:\n",
+        "\n",
+        "- usar librerías comunes de aprendizaje automático: **pandas, matplotlib, scikit-learn, keras, tensorflow y pytorch**;\n",
+        "- trabajar con un dataset real de prediccion de cáncer de mama;\n",
+        "- entender los datos como objetos matemáticos\n",
+        "- analizar el conjunto de datos como una muestra a partir de la cual estimamos cantidades estadísticas;\n",
+        "- medias y varianzas empíricas,\n",
+        "- covarianzas y correlaciones,\n",
+        "- redundancias entre variables,\n",
+        "- diferencias de escala,\n",
+        "- distribución por clases,\n",
+        "- representación geométrica de las observaciones.\n",
+        "\n",
+        "Tambien entrenamos un clasificador usando la teoria y entendemos que\n",
+        "- la combinación lineal,\n",
+        "- la sigmoide,\n",
+        "- la pérdida,\n",
+        "- las derivadas,\n",
+        "- el gradiente,\n",
+        "- y la actualización de parámetros;\n",
+        "\n",
+        "toda esa matemática está implementada detrás de escena en librerias como TensorFlow.\n",
+        "\n",
+        "## Instrucciones\n",
+        "\n",
+        "1. Hacé una copia personal de este cuaderno antes de editarlo.\n",
+        "2. Completá todas las celdas pedidas.\n",
+        "3. No borres las celdas de enunciado.\n",
+        "4. Ejecutá el cuaderno de principio a fin antes de entregar.\n",
+        "5. Dejá visibles los resultados y gráficos.\n",
+        "6. Entregá el archivo `.ipynb` con el nombre indicado por la cátedra."
+      ],
+      "metadata": {
+        "id": "54go9J61QtsQ"
+      },
+      "id": "54go9J61QtsQ"
+    },
+    {
+      "cell_type": "markdown",
+      "id": "84b1dab0",
+      "metadata": {
+        "id": "84b1dab0"
+      },
+      "source": [
+        "## Parte 0 - Cargar librerías"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "32694bc1",
+      "metadata": {
+        "id": "32694bc1"
+      },
+      "outputs": [],
+      "source": [
+        "import numpy as np\n",
+        "import pandas as pd\n",
+        "import matplotlib.pyplot as plt\n",
+        "import seaborn as sns\n",
+        "import tensorflow as tf\n",
+        "\n",
+        "from sklearn.datasets import load_breast_cancer\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "from sklearn.preprocessing import StandardScaler\n",
+        "\n",
+        "sns.set_theme(style=\"whitegrid\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "eeeb5796",
+      "metadata": {
+        "id": "eeeb5796"
+      },
+      "source": [
+        "## Parte 1 - Cargar el dataset\n",
+        "\n",
+        "Vamos a cargar el dataset de diagnóstico de cáncer de mama en Wisconsin desde  `scikit-learn`.\n",
+        "\n",
+        "Las características (o features/ columnas) se calculan a partir de una imagen digitalizada de una aspiración con aguja fina (FNA) de una masa mamaria. Estas describen propiedades de los núcleos celulares presentes en la imagen.\n",
+        "\n",
+        "- **Diagnóstico** (`diagnosis`): Malignant = maligno, Benignant = benigno  \n",
+        "\n",
+        "Se calculan diez características con valores reales para cada núcleo celular:\n",
+        "\n",
+        "- **Radio** (`radius`): media de las distancias desde el centro hasta los puntos del perímetro  \n",
+        "- **Textura** (`texture`): desviación estándar de los valores en escala de grises  \n",
+        "- **Perímetro** (`perimeter`)  \n",
+        "- **Área** (`area`)  \n",
+        "- **Suavidad** (`smoothness`): variación local en las longitudes del radio  \n",
+        "- **Compacidad** (`compactness`): perímetro² / área − 1.0  \n",
+        "- **Concavidad** (`concavity`): severidad de las partes cóncavas del contorno  \n",
+        "- **Puntos cóncavos** (`concave_points`): cantidad de porciones cóncavas del contorno  \n",
+        "- **Simetría** (`symmetry`)  \n",
+        "- **Dimensión fractal** (`fractal_dimension`): \"aproximación de la línea de costa\" − 1  "
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "c415ef61",
+      "metadata": {
+        "id": "c415ef61"
+      },
+      "outputs": [],
+      "source": [
+        "data = load_breast_cancer()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "56726ca9",
+      "metadata": {
+        "id": "56726ca9"
+      },
+      "source": [
+        "Inspeccionemos qué contiene:"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "8490598e",
+      "metadata": {
+        "id": "8490598e"
+      },
+      "outputs": [],
+      "source": [
+        "print(type(data))\n",
+        "print(data.keys())"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "12883b50",
+      "metadata": {
+        "id": "12883b50"
+      },
+      "source": [
+        "Ahora miremos algunos elementos importantes."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "39788375",
+      "metadata": {
+        "id": "39788375"
+      },
+      "outputs": [],
+      "source": [
+        "print(data.feature_names)\n",
+        "print(data.target_names)\n",
+        "print(data.data.shape)\n",
+        "print(data.target.shape)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "Cada núcleo celular tiene 10 características base (radio, textura, perímetro, etc., ver arriba).\n",
+        "\n",
+        "Pero en el dataset final, estas características aparecen en tres versiones distintas:\n",
+        "\n",
+        "- **Media** (`mean`): promedio de la característica en todos los núcleos  \n",
+        "- **Error estándar** (`error`): variabilidad/incertidumbre de la medición  \n",
+        "- **Peor valor** (`worst`): el valor más extremo (mayor) observado  \n",
+        "\n",
+        "Ejemplo con `radius`:\n",
+        "\n",
+        "- `mean radius`: promedio del radio  \n",
+        "- `radius error`: error estándar del radio  \n",
+        "- `worst radius`: peor (mayor) valor del radio  \n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "ZFdxSYK5cfHE"
+      },
+      "id": "ZFdxSYK5cfHE"
+    },
+    {
+      "cell_type": "markdown",
+      "id": "3e4caf2b",
+      "metadata": {
+        "id": "3e4caf2b"
+      },
+      "source": [
+        "### Preguntas\n",
+        "\n",
+        "1.1. ¿Cuántas observaciones/instancias tiene el dataset?  "
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "ixiPD9S4SWPr"
+      },
+      "id": "ixiPD9S4SWPr"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "1.2. ¿Cuántas variables predictoras tiene cada observación?  \n"
+      ],
+      "metadata": {
+        "id": "WvqYgjFySyT8"
+      },
+      "id": "WvqYgjFySyT8"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "kmvolm0oS9oO"
+      },
+      "id": "kmvolm0oS9oO"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "1.3. ¿Cuáles son las clases/etiquetas posibles?"
+      ],
+      "metadata": {
+        "id": "wNyvRzOcS2wh"
+      },
+      "id": "wNyvRzOcS2wh"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "un0mUOUqS_3o"
+      },
+      "id": "un0mUOUqS_3o"
+    },
+    {
+      "cell_type": "markdown",
+      "id": "f815ed8f",
+      "metadata": {
+        "id": "f815ed8f"
+      },
+      "source": [
+        "## Parte 2 - Definir explícitamente la tarea de aprendizaje\n",
+        "\n",
+        "En aprendizaje automático supervisado, solemos separar:\n",
+        "\n",
+        "- $X$: matriz de variables predictoras\n",
+        "- $y$: vector de etiquetas o variable dependiente"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "322f9a2f",
+      "metadata": {
+        "id": "322f9a2f"
+      },
+      "outputs": [],
+      "source": [
+        "X = data.data\n",
+        "y = data.target\n",
+        "\n",
+        "print(\"Forma de X:\", X.shape)\n",
+        "print(\"Forma de y:\", y.shape)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "739f31e5",
+      "metadata": {
+        "id": "739f31e5"
+      },
+      "source": [
+        "\n",
+        "Si el dataset tiene $N$ observaciones y $d$ features/características, entonces:\n",
+        "\n",
+        "$$\n",
+        "X \\in \\mathbb{R}^{N \\times d}, \\qquad y \\in \\{0,1\\}^N\n",
+        "$$\n",
+        "\n",
+        "Cada fila de $X$ representa un dato:\n",
+        "\n",
+        "$$\n",
+        "x_i = (x_{i1}, x_{i2}, \\dots, x_{id})\n",
+        "$$\n",
+        "\n",
+        "Cada $x_i$ es un vector en $\\mathbb{R}^d$.\n",
+        "\n",
+        "  "
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### Pregunta 2.1.\n",
+        "Con tus palabras, ¿cuál es la tarea T de aprendizaje en este problema? (que tipo de datos seran usados como entrada y como salida, si es una regresión/clasificación/otro)"
+      ],
+      "metadata": {
+        "id": "e_P_pSDcUPsZ"
+      },
+      "id": "e_P_pSDcUPsZ"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "lGMeKt-4U0sf"
+      },
+      "id": "lGMeKt-4U0sf"
+    },
+    {
+      "cell_type": "markdown",
+      "id": "b9f57e9b",
+      "metadata": {
+        "id": "b9f57e9b"
+      },
+      "source": [
+        "## Parte 3 - Separar en train y test\n",
+        "\n",
+        "En AA, necesitamos separar los datos en:\n",
+        "\n",
+        "- **conjunto de entrenamiento (train)**: para explorar, ajustar y aprender patrones,\n",
+        "- **conjunto de test (test)**: para evaluar más adelante qué tan bien generaliza el modelo.\n",
+        "\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "ef923dfe",
+      "metadata": {
+        "id": "ef923dfe"
+      },
+      "outputs": [],
+      "source": [
+        "X_train, X_test, y_train, y_test = train_test_split(\n",
+        "    X, y,\n",
+        "    test_size=0.2,\n",
+        "    random_state=42,\n",
+        "    stratify=y\n",
+        ")\n",
+        "\n",
+        "print(\"X_train:\", X_train.shape)\n",
+        "print(\"X_test :\", X_test.shape)\n",
+        "print(\"y_train:\", y_train.shape)\n",
+        "print(\"y_test :\", y_test.shape)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### Preguntas\n",
+        "4.1. ¿Cuántos datos quedaron en entrenamiento? ¿Cuántos datos quedaron en test?\n",
+        "\n",
+        "_Para pensar: ¿que te parece que pasaría en el entrenamiento si en vez de usar el 20% (0.2) para test usamos 30%?_"
+      ],
+      "metadata": {
+        "id": "51vmPu3hWdrp"
+      },
+      "id": "51vmPu3hWdrp"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "T803kqEyXduo"
+      },
+      "id": "T803kqEyXduo"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "4.2.  ¿Por qué usamos `stratify=y`? Busca en la libreria para que sirve ese parametro de `train_test_split()`"
+      ],
+      "metadata": {
+        "id": "o21wlDGaW0QT"
+      },
+      "id": "o21wlDGaW0QT"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "kv2TxQ7jXp6F"
+      },
+      "id": "kv2TxQ7jXp6F"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "1165b118",
+      "metadata": {
+        "id": "1165b118"
+      },
+      "outputs": [],
+      "source": [
+        "#Verifiquemos que stratify=y hizo bien el trabajo\n",
+        "print(\"Proporción clase 0 en dataset completo:\", np.mean(y == 0))\n",
+        "print(\"Proporción clase 0 en train:\", np.mean(y_train == 0))\n",
+        "print(\"Proporción clase 0 en test :\", np.mean(y_test == 0))"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "###Importante\n",
+        "En este caso, estamos separando nosotros el conjunto de test aleatoriamente de un dataset ya dado. En problemas reales, se supone que no tenemos el conjunto de test disponible en ninguna etapa del entrenamiento. Tenelo en mente cuando entrenes tus modelos.\n",
+        "\n",
+        "De ahora en mas hasta que hayamos entrenado el modelo, no “miramos” más el conjunto de test."
+      ],
+      "metadata": {
+        "id": "iYJvvABbXKVc"
+      },
+      "id": "iYJvvABbXKVc"
+    },
+    {
+      "cell_type": "markdown",
+      "id": "5a177c9f",
+      "metadata": {
+        "id": "5a177c9f"
+      },
+      "source": [
+        "## Parte 4 - Conjunto de entrenamiento\n",
+        "\n",
+        "Creamos un `DataFrame` con el conjunto de entrenamiento."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "a6995a70",
+      "metadata": {
+        "id": "a6995a70"
+      },
+      "outputs": [],
+      "source": [
+        "train_df = pd.DataFrame(X_train, columns=data.feature_names)\n",
+        "train_df[\"target\"] = y_train\n",
+        "\n",
+        "train_df.head()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "17f06a0d",
+      "metadata": {
+        "id": "17f06a0d"
+      },
+      "source": [
+        "También podemos ver algunas filas al azar:"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "1427d78b",
+      "metadata": {
+        "id": "1427d78b"
+      },
+      "outputs": [],
+      "source": [
+        "train_df.sample(5, random_state=42)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "7f4b487b",
+      "metadata": {
+        "id": "7f4b487b"
+      },
+      "source": [
+        "Inspección general del dataset"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "251018eb",
+      "metadata": {
+        "id": "251018eb"
+      },
+      "outputs": [],
+      "source": [
+        "#Util para ver tipo de dato y si hay alguna característica incompleta o rota\n",
+        "train_df.info()"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "176f18f7",
+      "metadata": {
+        "id": "176f18f7"
+      },
+      "outputs": [],
+      "source": [
+        "train_df.describe()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "961c9284",
+      "metadata": {
+        "id": "961c9284"
+      },
+      "source": [
+        "\n",
+        "La tabla anterior muestra, entre otras cosas:\n",
+        "\n",
+        "- cantidad de datos,\n",
+        "- media empírica,\n",
+        "- desvío estándar,\n",
+        "- mínimo,\n",
+        "- máximo,\n",
+        "- cuartiles.\n",
+        "\n",
+        "La **media empírica** de una variable $x$ se define como:\n",
+        "\n",
+        "$$\n",
+        "\\hat{\\mu} = \\frac{1}{N}\\sum_{i=1}^N x_i\n",
+        "$$\n",
+        "\n",
+        "La **varianza empírica** puede escribirse como:\n",
+        "\n",
+        "$$\n",
+        "\\hat{\\sigma}^2 = \\frac{1}{N}\\sum_{i=1}^N (x_i - \\hat{\\mu})^2\n",
+        "$$\n",
+        "\n",
+        "En Python podemos calcularlas 'manualmente' para una variable."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "d5b5bfb0",
+      "metadata": {
+        "id": "d5b5bfb0"
+      },
+      "outputs": [],
+      "source": [
+        "x = train_df[\"mean radius\"].values\n",
+        "\n",
+        "mu_hat = np.mean(x)\n",
+        "var_hat = np.var(x)\n",
+        "\n",
+        "print(\"Media empírica:\", mu_hat)\n",
+        "print(\"Varianza empírica:\", var_hat)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "d1313ea2",
+      "metadata": {
+        "id": "d1313ea2"
+      },
+      "source": [
+        "### Ejercicio\n",
+        "\n",
+        "Elegí otra feature y calculá 'manualmente':\n",
+        "\n",
+        "1. su media empírica,  \n",
+        "2. su varianza empírica,  \n",
+        "3. su desvío estándar."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Tu código aquí"
+      ],
+      "metadata": {
+        "id": "mRGzG9_eZuJK"
+      },
+      "id": "mRGzG9_eZuJK",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "id": "0179cade",
+      "metadata": {
+        "id": "0179cade"
+      },
+      "source": [
+        "## Parte 5 - Histogramas: distribución de las variables\n",
+        "\n",
+        "Los histogramas nos permiten ver cómo se distribuyen los valores de una variable. Esto es un estudio preliminar para saber que tipo de información estamos usando para aprender."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "056e32a3",
+      "metadata": {
+        "id": "056e32a3"
+      },
+      "outputs": [],
+      "source": [
+        "plt.figure(figsize=(6,4))\n",
+        "plt.hist(train_df[\"mean radius\"], bins=20, edgecolor=\"black\")\n",
+        "plt.xlabel(\"mean radius\")\n",
+        "plt.ylabel(\"Frecuencia\")\n",
+        "plt.title(\"Histograma de mean radius\")\n",
+        "plt.show()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### Ejercicio 5.1\n",
+        "\n",
+        "Elegi otra caracteristica y plotea su histograma"
+      ],
+      "metadata": {
+        "id": "eGnwsIEldI1N"
+      },
+      "id": "eGnwsIEldI1N"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Tu código aquí"
+      ],
+      "metadata": {
+        "id": "2KzJSxhsdpvI"
+      },
+      "id": "2KzJSxhsdpvI",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "id": "01b32922",
+      "metadata": {
+        "id": "01b32922"
+      },
+      "source": [
+        "### Preguntas\n",
+        "\n",
+        "5.1. ¿Las distribuciones parecen simétricas o sesgadas?"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "NG0CEUWjeSZW"
+      },
+      "id": "NG0CEUWjeSZW"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "5.2. ¿Hay alguna variable con datos muy dispersos? ¿Qué significan los valores muy alejados de los valores con frecuencias más altas?"
+      ],
+      "metadata": {
+        "id": "aAWk1gIMeSrL"
+      },
+      "id": "aAWk1gIMeSrL"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "Me62SwGreS61"
+      },
+      "id": "Me62SwGreS61"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "5.3. Fijate las escalas del eje x. ¿Te parece que la escala de las variables puede influir en el aprendizaje del modelo?"
+      ],
+      "metadata": {
+        "id": "xdiCzh6cedHW"
+      },
+      "id": "xdiCzh6cedHW"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "FjvHxQ9q6pqB"
+      },
+      "id": "FjvHxQ9q6pqB"
+    },
+    {
+      "cell_type": "markdown",
+      "id": "2e2f5483",
+      "metadata": {
+        "id": "2e2f5483"
+      },
+      "source": [
+        "## Parte 6 - Distribuciones separadas por clase\n",
+        "\n",
+        "Ahora queremos ver si ciertas variables toman valores diferentes según la clase / etiqueta."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "d4529e3b",
+      "metadata": {
+        "id": "d4529e3b"
+      },
+      "outputs": [],
+      "source": [
+        "print(data.target_names)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "4222a4bc",
+      "metadata": {
+        "id": "4222a4bc"
+      },
+      "outputs": [],
+      "source": [
+        "caract = \"mean radius\"\n",
+        "\n",
+        "plt.figure(figsize=(6,4))\n",
+        "plt.hist(train_df[train_df[\"target\"] == 0][caract], bins=20, alpha=0.6, label=\"Maligno 0\", edgecolor=\"black\")\n",
+        "plt.hist(train_df[train_df[\"target\"] == 1][caract], bins=20, alpha=0.6, label=\"Benigno 1\", edgecolor=\"black\")\n",
+        "plt.xlabel(caract)\n",
+        "plt.ylabel(\"Frecuencia\")\n",
+        "plt.title(f\"Distribución de {caract} por clase\")\n",
+        "plt.legend()\n",
+        "plt.show()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "dc76ebc6",
+      "metadata": {
+        "id": "dc76ebc6"
+      },
+      "source": [
+        "### Ejercicio 6.1\n",
+        "\n",
+        "Repetí este análisis para una caracterisitca mas.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Tu código aquí"
+      ],
+      "metadata": {
+        "id": "IRy3X9h2i_qF"
+      },
+      "id": "IRy3X9h2i_qF",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### Pregunta 6.1\n",
+        "\n",
+        " ¿Estas variables parecen separar relativamente bien las clases ya?  \n",
+        "\n",
+        "_Para pensar ¿Qué implicaría eso para una futura tarea de clasificación?_"
+      ],
+      "metadata": {
+        "id": "BA5aZwOejGIv"
+      },
+      "id": "BA5aZwOejGIv"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "7vbOVoHH650N"
+      },
+      "id": "7vbOVoHH650N"
+    },
+    {
+      "cell_type": "markdown",
+      "id": "ca8a4a47",
+      "metadata": {
+        "id": "ca8a4a47"
+      },
+      "source": [
+        "## Parte 7 - Covarianza y Correlación\n",
+        "\n",
+        "La covarianza mide cómo varían conjuntamente dos variables.\n",
+        "\n",
+        "Para dos variables $X$ e $Y$, una forma empírica de escribirla es:\n",
+        "\n",
+        "$$\n",
+        "\\operatorname{Cov}(X,Y) = \\frac{1}{N}\\sum_{i=1}^{N}(x_i-\\hat{\\mu}_X)(y_i-\\hat{\\mu}_Y)\n",
+        "$$"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "04ed781d",
+      "metadata": {
+        "id": "04ed781d"
+      },
+      "source": [
+        "\n",
+        "Como la covarianza depende de la escala, muchas veces usamos la **correlación**, que transmite la misma info pero está normalizada y toma valores entre -1 y 1."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "c728f6f1",
+      "metadata": {
+        "id": "c728f6f1"
+      },
+      "outputs": [],
+      "source": [
+        "#Usamos sin etiquetas/clases:\n",
+        "train_features_df = train_df.drop(columns=\"target\")\n",
+        "\n",
+        "corr_matrix = train_features_df.corr()\n",
+        "corr_matrix"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "a09745c6",
+      "metadata": {
+        "id": "a09745c6"
+      },
+      "outputs": [],
+      "source": [
+        "plt.figure(figsize=(12,10))\n",
+        "sns.heatmap(corr_matrix, cmap=\"coolwarm\", center=0)\n",
+        "plt.title(\"Matriz de correlación\")\n",
+        "plt.show()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Veamos algunas correlaciones de cerca. En la diagonal hay informacion trivial."
+      ],
+      "metadata": {
+        "id": "6hw5QR-dlDab"
+      },
+      "id": "6hw5QR-dlDab"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "72728e61",
+      "metadata": {
+        "id": "72728e61"
+      },
+      "outputs": [],
+      "source": [
+        "\n",
+        "subset = [\"mean radius\", \"mean texture\", \"mean area\", \"mean smoothness\"]\n",
+        "\n",
+        "plt.figure(figsize=(8,6))\n",
+        "sns.heatmap(train_features_df[subset].corr(), annot=True, cmap=\"coolwarm\", vmin=-1, vmax=1)\n",
+        "plt.title(\"Correlación entre algunas features\")\n",
+        "plt.show()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "af565d9c",
+      "metadata": {
+        "id": "af565d9c"
+      },
+      "source": [
+        "### Ejercicio 7.1\n",
+        "\n",
+        "Buscá pares de variables con:\n",
+        "\n",
+        "- correlación muy alta positiva,\n",
+        "- correlación muy alta negativa,\n",
+        "- correlación cercana a cero."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "d1c10e7a",
+      "metadata": {
+        "id": "d1c10e7a"
+      },
+      "outputs": [],
+      "source": [
+        "#Pista, con esta linea imprimis las 20 correlaciones positivas, que son las triviales\n",
+        "#Modificala segun necesites:\n",
+        "corr_matrix.abs().unstack().sort_values(ascending=False).head(20)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "7f9a79e5",
+      "metadata": {
+        "id": "7f9a79e5"
+      },
+      "source": [
+        "\n",
+        "Si dos variables están muy correlacionadas, puede pasar que ambas estén aportando información muy parecida."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "6169bed8",
+      "metadata": {
+        "id": "6169bed8"
+      },
+      "source": [
+        "\n",
+        "\n",
+        "Tener variables muy correlacionadas no siempre es “malo”, pero puede indicar:\n",
+        "\n",
+        "- redundancia,\n",
+        "- multicolinealidad,\n",
+        "- dificultad para interpretar modelos lineales."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "6f3049d1",
+      "metadata": {
+        "id": "6f3049d1"
+      },
+      "source": [
+        "### Ejercicio 7.2\n",
+        "\n",
+        "Podemos hacer una versión reducida del dataset eliminando caracteristicas muy redundantes. Elimina todas las caracteristicas con correlación mayor a `0.9`"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "ff66dc46",
+      "metadata": {
+        "id": "ff66dc46"
+      },
+      "outputs": [],
+      "source": [
+        "#Tu código aquí\n",
+        "\n",
+        "#Filtra cuales son los datos mas del 0.9 correlacionados con otros\n",
+        "#(ojo con las trivialidades o vas a borrar todo)\n",
+        "\n",
+        "#Completa las columnas a eliminar\n",
+        "to_drop = []\n",
+        "\n",
+        "train_reducido_df = train_features_df.drop(columns=to_drop)\n",
+        "\n",
+        "print(\"Cantidad original de features:\", train_features_df.shape[1])\n",
+        "print(\"Cantidad reducida de features:\", train_reducido_df.shape[1])"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "3696ff69",
+      "metadata": {
+        "id": "3696ff69"
+      },
+      "source": [
+        "### Preguntas\n",
+        "\n",
+        "7.1. ¿Cuántas variables quedaron luego de eliminar redundancias?  \n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "Wd-XwQLO8d2O"
+      },
+      "id": "Wd-XwQLO8d2O"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "7.2. ¿Qué ventaja puede tener trabajar con menos dimensiones?  \n"
+      ],
+      "metadata": {
+        "id": "PvQE2dy28du8"
+      },
+      "id": "PvQE2dy28du8"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "PxblRP7q8dgu"
+      },
+      "id": "PxblRP7q8dgu"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "7.3. ¿Qué riesgo hay al eliminar variables demasiado rápido?"
+      ],
+      "metadata": {
+        "id": "WSNL5BmM8hqi"
+      },
+      "id": "WSNL5BmM8hqi"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "s9EdN6KQ8hiE"
+      },
+      "id": "s9EdN6KQ8hiE"
+    },
+    {
+      "cell_type": "markdown",
+      "id": "3312cd6e",
+      "metadata": {
+        "id": "3312cd6e"
+      },
+      "source": [
+        "## Parte 8 - Escalas diferentes y necesidad de normalización\n",
+        "\n",
+        "Miremos los rangos de algunas variables:"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "6d342add",
+      "metadata": {
+        "id": "6d342add"
+      },
+      "outputs": [],
+      "source": [
+        "train_features_df[subset].describe().T[[\"mean\", \"std\", \"min\", \"max\"]]"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "286544a1",
+      "metadata": {
+        "id": "286544a1"
+      },
+      "source": [
+        "Probablemente notes que algunas variables están en escalas muy distintas.  \n",
+        "Eso importa mucho porque:\n",
+        "\n",
+        "- afecta distancias,\n",
+        "- afecta productos internos,\n",
+        "- afecta el comportamiento de muchos modelos.\n",
+        "\n",
+        "### Estandarización\n",
+        "\n",
+        "La estandarización transforma una variable $x$ en:\n",
+        "\n",
+        "$$\n",
+        "z = \\frac{x - \\hat{\\mu}}{\\hat{\\sigma}}\n",
+        "$$\n",
+        "\n",
+        "donde:\n",
+        "\n",
+        "- $\\hat{\\mu}$ es la media empírica,\n",
+        "- $\\hat{\\sigma}$ es el desvío estándar empírico.\n",
+        "\n",
+        "\n",
+        "IMPORTANTE: tambien hay que estandarizar el test set:\n",
+        "- ajustamos el escalador solo con `train`\n",
+        "- luego transformamos `train` y `test`"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "19e62295",
+      "metadata": {
+        "id": "19e62295"
+      },
+      "outputs": [],
+      "source": [
+        "scaler = StandardScaler()\n",
+        "X_train_scaled = scaler.fit_transform(train_features_df)\n",
+        "\n",
+        "X_test_scaled = scaler.transform(X_test)\n",
+        "\n",
+        "scaled_train_df = pd.DataFrame(X_train_scaled, columns=train_features_df.columns)\n",
+        "scaled_train_df.head()"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "1b27ee38",
+      "metadata": {
+        "id": "1b27ee38"
+      },
+      "outputs": [],
+      "source": [
+        "fig, axes = plt.subplots(1, 2, figsize=(10,4))\n",
+        "\n",
+        "axes[0].hist(train_features_df[\"mean area\"], bins=20, edgecolor=\"black\")\n",
+        "axes[0].set_title(\"Antes de escalar\")\n",
+        "axes[0].set_xlabel(\"mean area\")\n",
+        "\n",
+        "axes[1].hist(scaled_train_df[\"mean area\"], bins=20, edgecolor=\"black\")\n",
+        "axes[1].set_title(\"Después de escalar\")\n",
+        "axes[1].set_xlabel(\"mean area escalada\")\n",
+        "\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "fd46d49f",
+      "metadata": {
+        "id": "fd46d49f"
+      },
+      "source": [
+        "### Para pensar\n",
+        "\n",
+        "La forma general de la distribución no desaparece, pero cambia la escala.  \n",
+        "Esto hace que las variables sean más comparables entre sí."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "0fe2aca5",
+      "metadata": {
+        "id": "0fe2aca5"
+      },
+      "source": [
+        "### Preguntas\n",
+        "\n",
+        "8.1. ¿Qué valor tienen aproximadamente las medias luego de escalar?  \n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "fN9PTFHU9JTJ"
+      },
+      "id": "fN9PTFHU9JTJ"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "8.2. ¿Qué valor tienen aproximadamente los desvíos estándar?  \n"
+      ],
+      "metadata": {
+        "id": "qhq6XqMA9Jo1"
+      },
+      "id": "qhq6XqMA9Jo1"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._"
+      ],
+      "metadata": {
+        "id": "iBsdtv5Z9J9z"
+      },
+      "id": "iBsdtv5Z9J9z"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "8.3. ¿Por qué hay que ajustar el escalado usando solo train y no todo el dataset (junto con test)?"
+      ],
+      "metadata": {
+        "id": "5aoneFf99KRK"
+      },
+      "id": "5aoneFf99KRK"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "zOEo25Q09KnO"
+      },
+      "id": "zOEo25Q09KnO"
+    },
+    {
+      "cell_type": "markdown",
+      "id": "0d664951",
+      "metadata": {
+        "id": "0d664951"
+      },
+      "source": [
+        "8.4 (Opcional para grado, obligatoria para posgrado) ¿Qué problema puede haber si una variable tiene valores muchísimo mayores que otra? Pensalo en terminos de los parametros `w` por ejemplo."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "_Reemplazá este texto por tu respuesta._\n"
+      ],
+      "metadata": {
+        "id": "zhfpDDlA97DA"
+      },
+      "id": "zhfpDDlA97DA"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "---\n",
+        "\n",
+        "## Clasificación binaria con sigmoide en TensorFlow\n",
+        "\n",
+        "En esta parte vamos a entrenar una **clasificación binaria** sobre el dataset **Breast Cancer Wisconsin** usando **TensorFlow/Keras**.\n",
+        "\n",
+        "La idea no es estudiar modelos en profundidad, sino mostrar algo más simple y puntual:\n",
+        "\n",
+        "> toda la matemática que vimos en teoría — combinación lineal, sigmoide, pérdida, derivadas, gradiente y minimización — **ya está ocurriendo detrás de escena** cuando usamos unas pocas funciones de TensorFlow.\n",
+        "\n",
+        "Vamos a trabajar con **muchas features**, no solo dos: en vez de un vector $x \\in \\mathbb{R}^2$ tenemos un caso más general:\n",
+        "\n",
+        "$$\n",
+        "x \\in \\mathbb{R}^d\n",
+        "$$\n",
+        "\n",
+        "donde $d$ es la cantidad de variables predictoras del dataset.\n",
+        "\n",
+        "No requerimos que programes nada, solamente que asocies en que parte del código se está aplicando cual concepto teórico."
+      ],
+      "metadata": {
+        "id": "9NX8CvRF0QGd"
+      },
+      "id": "9NX8CvRF0QGd"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "## El modelo matemático\n",
+        "\n",
+        "En teoría escribimos un modelo de clasificación binaria de la forma:\n",
+        "\n",
+        "$$\n",
+        "f(x) = \\sigma(w^\\top x + b)\n",
+        "$$\n",
+        "\n",
+        "donde:\n",
+        "\n",
+        "- $x \\in \\mathbb{R}^d$: vector de entrada\n",
+        "- $w \\in \\mathbb{R}^d$: vector de pesos\n",
+        "- $b \\in \\mathbb{R}$: sesgo\n",
+        "- $\\sigma(\\cdot)$: sigmoide\n",
+        "\n",
+        "La sigmoide transforma un número real en un valor entre 0 y 1. Eso se interpreta como una probabilidad.\n"
+      ],
+      "metadata": {
+        "id": "1vxpkJMY0qlO"
+      },
+      "id": "1vxpkJMY0qlO"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Toda esta expresión:\n",
+        "\n",
+        "$$\n",
+        "f(x) = \\sigma(w^\\top x + b)\n",
+        "$$\n",
+        "\n",
+        "en TensorFlow/Keras aparece resumida así:"
+      ],
+      "metadata": {
+        "id": "3Ixyy9ov08jK"
+      },
+      "id": "3Ixyy9ov08jK"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tf.keras.layers.Dense(1, activation=\"sigmoid\")\n",
+        "\n",
+        "# - Dense(1) crea una capa con **una sola salida**, o sea, una sola predicción\n",
+        "# - crea una combinación lineal: w^T x + b\n",
+        "# - activation=\"sigmoid\" aplica la sigmoide a esa combinación lineal"
+      ],
+      "metadata": {
+        "id": "MWB3Y0C10_QM"
+      },
+      "id": "MWB3Y0C10_QM",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "## Definir el modelo en TensorFlow\n",
+        "\n",
+        "Ahora construimos la regresión logística binaria en TensorFlow.\n",
+        "\n",
+        "Como entrada usamos un vector con tantas componentes como features tenga cada observación.\n"
+      ],
+      "metadata": {
+        "id": "uamzcBwz1W8R"
+      },
+      "id": "uamzcBwz1W8R"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "model = tf.keras.Sequential([\n",
+        "    tf.keras.layers.Dense(1, activation=\"sigmoid\", input_shape=(X_train_scaled.shape[1],))\n",
+        "])\n",
+        "\n",
+        "model.summary()\n"
+      ],
+      "metadata": {
+        "id": "KikR23gZ1VO2"
+      },
+      "id": "KikR23gZ1VO2",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "La teoría decía:\n",
+        "\n",
+        "$$\n",
+        "x \\in \\mathbb{R}^d\n",
+        "$$\n",
+        "\n",
+        "y en el código eso aparece como:\n",
+        "\n",
+        "```python\n",
+        "input_shape=(X_train_scaled.shape[1],)\n",
+        "```\n",
+        "\n",
+        "Es decir, el modelo recibe un vector con $d$ componentes, donde $d$ es la cantidad de features."
+      ],
+      "metadata": {
+        "id": "gpR1eMYQ1jn2"
+      },
+      "id": "gpR1eMYQ1jn2"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Función de pérdida\n",
+        "\n",
+        "Necesitamos medir qué tan bien el modelo se ajusta a los datos.\n",
+        "\n",
+        "En clasificación binaria, una forma estándar de hacerlo es con una función de pérdida que compare:\n",
+        "\n",
+        "- la predicción del modelo\n",
+        "- la etiqueta real $y \\in \\{0,1\\}$\n",
+        "\n",
+        "En Keras eso se escribe así:\n"
+      ],
+      "metadata": {
+        "id": "NbdfGemE1_c6"
+      },
+      "id": "NbdfGemE1_c6"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tf.keras.losses.BinaryCrossentropy()"
+      ],
+      "metadata": {
+        "id": "1ByIhSxz2HLq"
+      },
+      "id": "1ByIhSxz2HLq",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "Esa línea define la función que el entrenamiento va a intentar **minimizar**.\n",
+        "\n",
+        "En otras palabras:\n",
+        "\n",
+        "- si las predicciones se parecen a las etiquetas reales, la pérdida baja\n",
+        "- si las predicciones están lejos de las etiquetas reales, la pérdida sube\n",
+        "\n",
+        "Toda la matemática exacta queda encapsulada en la función.  \n"
+      ],
+      "metadata": {
+        "id": "hWKMYObT2Jbs"
+      },
+      "id": "hWKMYObT2Jbs"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Optimización\n",
+        "\n",
+        "En teoría vimos :\n",
+        "\n",
+        "$$ w \\leftarrow w - \\eta \\nabla_w L $$\n",
+        "\n",
+        "$$b \\leftarrow b - \\eta \\nabla_b L $$\n",
+        "\n",
+        "donde:\n",
+        "\n",
+        "- (L) es la pérdida\n",
+        "- (\\nabla L) es el gradiente\n",
+        "- (\\eta) es la tasa de aprendizaje\n",
+        "\n",
+        "En TensorFlow, esa idea aparece resumida en el optimizador."
+      ],
+      "metadata": {
+        "id": "BccOSgsW2MGE"
+      },
+      "id": "BccOSgsW2MGE"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tf.keras.optimizers.SGD(learning_rate=0.01)"
+      ],
+      "metadata": {
+        "id": "7ejk4CE12Oby"
+      },
+      "id": "7ejk4CE12Oby",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "Esa línea le dice a TensorFlow que use **descenso por gradiente**.\n",
+        "\n",
+        "O sea, una vez que medimos la pérdida con `BinaryCrossentropy()`, el optimizador:\n",
+        "1. calcula derivadas automáticamente,\n",
+        "2. actualiza los parámetros para reducir esa pérdida.\n"
+      ],
+      "metadata": {
+        "id": "_kReu6F-2TUP"
+      },
+      "id": "_kReu6F-2TUP"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "## Compilar el modelo\n",
+        "\n",
+        "Ahora juntamos las piezas:\n",
+        "\n",
+        "- modelo\n",
+        "- función de pérdida\n",
+        "- optimizador\n",
+        "- métrica de evaluación\n"
+      ],
+      "metadata": {
+        "id": "ASernxFp2aGI"
+      },
+      "id": "ASernxFp2aGI"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "model.compile(\n",
+        "    optimizer=tf.keras.optimizers.SGD(learning_rate=0.01),\n",
+        "    loss=tf.keras.losses.BinaryCrossentropy(),\n",
+        "    metrics=[\"accuracy\"]\n",
+        ")\n"
+      ],
+      "metadata": {
+        "id": "q_4sXOkU2bEI"
+      },
+      "id": "q_4sXOkU2bEI",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "Estas líneas dicen, básicamente:\n",
+        "\n",
+        "- **modelo**: usar $\\sigma(w^T x + b)$\n",
+        "- **loss**: medir qué tan lejos estamos de las etiquetas reales\n",
+        "- **optimizer**: usar gradientes para reducir la pérdida\n",
+        "- **accuracy**: reportar también cuántas clasificaciones fueron correctas (exactitud)\n"
+      ],
+      "metadata": {
+        "id": "UUzDqHqk2eib"
+      },
+      "id": "UUzDqHqk2eib"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Entrenar el modelo\n",
+        "\n",
+        "Acá ocurre el entrenamiento propiamente dicho:\n"
+      ],
+      "metadata": {
+        "id": "inRlJxah2ibj"
+      },
+      "id": "inRlJxah2ibj"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "history = model.fit(\n",
+        "    X_train_scaled, y_train,\n",
+        "    epochs=100,\n",
+        "    batch_size=32,\n",
+        "    verbose=1\n",
+        ")\n"
+      ],
+      "metadata": {
+        "id": "TMLaqMQQ2ka8"
+      },
+      "id": "TMLaqMQQ2ka8",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "En esa sola llamada, TensorFlow repite automáticamente este ciclo (epoch) 100 veces:\n",
+        "\n",
+        "1. toma datos de entrada\n",
+        "2. calcula la salida del modelo\n",
+        "3. mide la pérdida\n",
+        "4. calcula derivadas\n",
+        "5. actualiza pesos y bias\n",
+        "6. vuelve a repetir\n",
+        "\n",
+        "Es decir, `fit(...)` ejecuta detrás de escena gran parte de la matemática que vimos en teoría."
+      ],
+      "metadata": {
+        "id": "zT2iwq3u2nIA"
+      },
+      "id": "zT2iwq3u2nIA"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Evaluar en test\n",
+        "\n",
+        "Una vez entrenado el modelo (queda guardado el ultimo modelo del epoch 100), evaluamos qué tan bien funciona sobre datos que no usó para entrenar."
+      ],
+      "metadata": {
+        "id": "hxVcSnZg2qXa"
+      },
+      "id": "hxVcSnZg2qXa"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "test_loss, test_acc = model.evaluate(X_test_scaled, y_test, verbose=0)\n",
+        "\n",
+        "print(\"Loss en test:\", test_loss)\n",
+        "print(\"Accuracy en test:\", test_acc)\n"
+      ],
+      "metadata": {
+        "id": "9bLZxvBf2sym"
+      },
+      "id": "9bLZxvBf2sym",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Ver la evolución de la pérdida y la exactitud (acc)\n",
+        "\n",
+        "Podemos visualizar cómo fue cambiando el entrenamiento.\n"
+      ],
+      "metadata": {
+        "id": "8yKDxPjN2-yq"
+      },
+      "id": "8yKDxPjN2-yq"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "plt.figure(figsize=(6,4))\n",
+        "plt.plot(history.history[\"loss\"], label=\"train loss (pérdida)\")\n",
+        "plt.xlabel(\"Epoch\")\n",
+        "plt.ylabel(\"Loss (pérdida)\")\n",
+        "plt.title(\"Evolución de la pérdida\")\n",
+        "plt.legend()\n",
+        "plt.show()\n"
+      ],
+      "metadata": {
+        "id": "o2iSMdG63Avx"
+      },
+      "id": "o2iSMdG63Avx",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "plt.figure(figsize=(6,4))\n",
+        "plt.plot(history.history[\"accuracy\"], label=\"train accuracy\")\n",
+        "plt.xlabel(\"Epoch\")\n",
+        "plt.ylabel(\"Accuracy (Exactitud)\")\n",
+        "plt.title(\"Evolución de la exactitud\")\n",
+        "plt.legend()\n",
+        "plt.show()\n"
+      ],
+      "metadata": {
+        "id": "VJ-M-XM63Cop"
+      },
+      "id": "VJ-M-XM63Cop",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Si lo anterior resultó claro, podés intentar entrenar el modelo utilizando un subconjunto de características (en esta sección no usamos el dataset filtrado por correlaciones, sino el dataset completo).\n",
+        "\n",
+        "Volvé a entrenar el modelo y analizá si la exactitud disminuye."
+      ],
+      "metadata": {
+        "id": "621GUFY6GD4s"
+      },
+      "id": "621GUFY6GD4s"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Entrega\n",
+        "\n",
+        "Antes de entregar, verificá lo siguiente:\n",
+        "\n",
+        "- [ ] completé todas las consignas;\n",
+        "- [ ] ejecuté el cuaderno de principio a fin;\n",
+        "- [ ] dejé los resultados visibles;\n",
+        "- [ ] guardé el archivo con el nombre correcto.\n",
+        "\n",
+        "Fin de la práctica."
+      ],
+      "metadata": {
+        "id": "vDoYQwnaGeGs"
+      },
+      "id": "vDoYQwnaGeGs"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python",
+      "version": "3.x"
+    },
+    "colab": {
+      "provenance": []
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
